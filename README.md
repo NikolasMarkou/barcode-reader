@@ -1,2 +1,3 @@
 # barcode-reader
-Bardcode reader
+
+Reading input from barcode reader, helping Andreas thesis
