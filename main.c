@@ -1,4 +1,5 @@
 #include <poll.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -46,7 +47,7 @@ int main(int argc, char** argv){
 	// The structure for two events
 	struct pollfd fds[1] = {{0}};
 	 
-	int fd = open(argv[1], O_RDONLY);
+	int fd = open(argv[1], O_RDONLY | O_NONBLOCK);
 	
 	if (fd < 0 ){
 		printf("Error opening file %s\n", argv[1]);
@@ -60,6 +61,9 @@ int main(int argc, char** argv){
 	fds[0].events = POLLIN;
 	fds[0].revents = 0;
 		
+	barcodeContext context = initializeBarcodeContext();
+	barcodeOutput output = {0};
+	
 	while (continuePolling){
 		// Poll
 		int ret = poll(fds, 1, POLL_TIME_MS);
@@ -67,28 +71,22 @@ int main(int argc, char** argv){
 		if (ret > 0 && (fds[0].revents & POLLIN)){
 			// If we detect the event, 
 			// zero it out so we can reuse the structure
-
-			barcodeOutput output = {0};
-			barcodeContext context = initializeBarcodeContext();
-				
 			int readBytes = 0;
 			char buffer[MAX_BUFFER_SIZE] = {0};
-			printf("INPUT CAPTURED\n");
 				
-			while ((readBytes = read(fds[0].fd, buffer, sizeof(buffer)-1)) > 0){
-				int iter = 0 ;
-					
+			if ((readBytes = read(fds[0].fd, buffer, sizeof(buffer))) > 0){
 				if (validString(buffer, readBytes) == SUCCESS){
 					barcodeInput inputLine = convertStringToLineInput(buffer, readBytes);
 					addInputLineToContext(&context, inputLine);
+					bzero(buffer, sizeof(buffer));
 				}
 			}
 				
 			if (parseBarcodeContext(context, &output) == SUCCESS){
-				printf("BARCODE SCAN SUCCESS \n");
+				printf("BARCODE RESULT : %s\n", output.line);
+				context = initializeBarcodeContext();
+				bzero(&output,sizeof(output)) ;
 			}
-				
-			printf("BARCODE RESULT : %s\n", output.line);
 		}
 		
 		// zero it out so we can reuse the structure
