@@ -16,23 +16,23 @@
 #define MAX_BARCODE_OUTPUT 1024
 
 typedef struct barcodeMapping{
-	char character;
-	unsigned int size;
-	char pattern[MAX_BARCODE_PATTERN];
+    char character;
+    unsigned int size;
+    char pattern[MAX_BARCODE_PATTERN];
 } barcodeMapping;
 
 typedef struct barcodeInput {
-	char line[INPUT_LINE_LENGTH];
+    char line[INPUT_LINE_LENGTH];
 } barcodeInput;
 
 typedef struct barcodeContext {
-	unsigned int noInputLines;
-	barcodeInput inputLines[MAX_BARCODE_INPUTS];
+    unsigned int noInputLines;
+    barcodeInput inputLines[MAX_BARCODE_INPUTS];
 } barcodeContext;
 
 typedef struct barcodeOutput {
-	unsigned int size;
-	char line[MAX_BARCODE_OUTPUT];
+    unsigned int size;
+    char line[MAX_BARCODE_OUTPUT];
 } barcodeOutput;
 
 int isSkipTag(barcodeInput input);

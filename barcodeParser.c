@@ -125,136 +125,133 @@ const barcodeMapping CharacterMap[] = {
 };
 
 barcodeContext initializeBarcodeContext(){
-	barcodeContext context;
-	bzero(&context, sizeof(context));
-	return context;
+    barcodeContext context;
+    bzero(&context, sizeof(context));
+    return context;
 }
 
 int addInputLineToContext(barcodeContext* context, barcodeInput input){
-	if (context == NULL){
-		return FAILURE;
-	}
-	
-	if (context->noInputLines < MAX_BARCODE_INPUTS){
-		context->inputLines[context->noInputLines] = input;
-		context->noInputLines++;
-		return SUCCESS;
-	}
-	
+    if (context == NULL){
 	return FAILURE;
+    }
+	
+    if (context->noInputLines < MAX_BARCODE_INPUTS){
+	context->inputLines[context->noInputLines] = input;
+	context->noInputLines++;
+        return SUCCESS;
+    }
+	
+    return FAILURE;
 }
 
 int validString(char* buffer, size_t size){
-	if (buffer != NULL && size == INPUT_LINE_LENGTH){
-		return SUCCESS;
-	}
+    if (buffer != NULL && size == INPUT_LINE_LENGTH){
+	return SUCCESS;
+    }
 	
-	return FAILURE;
+    return FAILURE;
 }
 
 int parseBarcodeContext(barcodeContext context, barcodeOutput* output){
-	unsigned int 
-		iter = 0, 
-		newLine = 0, 
-		startStop = 0, 
-		bufferSize = 0,
-		characterCounter = 0;
-	char buffer[MAX_BARCODE_OUTPUT] = {0};
+    unsigned int iter = 0, newLine = 0, 
+	startStop = 0, bufferSize = 0, characterCounter = 0;
+    char buffer[MAX_BARCODE_OUTPUT] = {0};
 	
-	if (output == NULL){
-		return FAILURE;
-	}
+    if (output == NULL){
+        return FAILURE;
+    }
 	
-	bzero(output, sizeof(barcodeOutput));
+    bzero(output, sizeof(barcodeOutput));
 	
-	for (iter = 0 ; iter < context.noInputLines && startStop < 2; iter++){
-        	if (newLine == 1){
-				char ch = 0x00;
-				if (output->size < MAX_BARCODE_OUTPUT && mapInputToCharacter(buffer, &ch, bufferSize) == SUCCESS){
-					output->line[output->size] = ch;
-					output->size += 1;
-				}
-				newLine = 0;
-				bufferSize = 0;
-				bzero(buffer, sizeof(buffer));
-        	}
+    for (iter = 0 ; iter < context.noInputLines && startStop < 2; iter++){
+        if (newLine == 1){
+	    char ch = 0x00;
+            if (output->size < MAX_BARCODE_OUTPUT && mapInputToCharacter(buffer, &ch, bufferSize) == SUCCESS){
+	        output->line[output->size] = ch;
+		output->size += 1;
+	    }
+	    newLine = 0;
+	    bufferSize = 0;
+	    bzero(buffer, sizeof(buffer));
+        }
 
-		if (isNewBlockSeparator(context.inputLines[iter]) == SUCCESS){
-			newLine = 1;
-		}
-		else if (isBufferStartEndTag(context.inputLines[iter]) == SUCCESS){
-			startStop++;
-		}
-		else if (isCharacterTag(context.inputLines[iter]) == SUCCESS){
-			if (isSkipTag(context.inputLines[iter]) == FAILURE){
-				memcpy(buffer + bufferSize, context.inputLines[iter].line, INPUT_LINE_LENGTH);
-				bufferSize += INPUT_LINE_LENGTH;
-			}
-		}
-	
-	if (startStop == 2){
-		return SUCCESS;
+	if (isNewBlockSeparator(context.inputLines[iter]) == SUCCESS){
+	    newLine = 1;
 	}
+	else if (isBufferStartEndTag(context.inputLines[iter]) == SUCCESS){
+	    startStop++;
+	}
+	else if (isCharacterTag(context.inputLines[iter]) == SUCCESS){
+	    if (isSkipTag(context.inputLines[iter]) == FAILURE){
+		memcpy(buffer + bufferSize, context.inputLines[iter].line, INPUT_LINE_LENGTH);
+		bufferSize += INPUT_LINE_LENGTH;
+	    }
+	}
+    }
 	
-	return FAILURE;
+    if (startStop == 2){
+        return SUCCESS;
+    }
+	
+    return FAILURE;
 }
 
 int isNewBlockSeparator(barcodeInput input){
-	if (memcmp((void *)input.line, (void *)NewLineBreakTag, INPUT_LINE_LENGTH) == 0){
-		return SUCCESS;
-	}
-	return FAILURE;
+    if (memcmp((void *)input.line, (void *)NewLineBreakTag, INPUT_LINE_LENGTH) == 0){
+	return SUCCESS;
+    }
+    return FAILURE;
 }
 
 int isBufferStartEndTag(barcodeInput input){
-	if (memcmp((void *)input.line, (void *)StartStopTag, INPUT_LINE_LENGTH) == 0){
-		return SUCCESS;
-	}
-	return FAILURE;
+    if (memcmp((void *)input.line, (void *)StartStopTag, INPUT_LINE_LENGTH) == 0){
+	return SUCCESS;
+    }
+    return FAILURE;
 }
 
 int isSkipTag(barcodeInput input){
-	if (memcmp((void *)input.line, (void *)SkipTag, INPUT_LINE_LENGTH) == 0){
-		return SUCCESS;
-	}
-	return FAILURE;
+    if (memcmp((void *)input.line, (void *)SkipTag, INPUT_LINE_LENGTH) == 0){
+	return SUCCESS;
+    }
+    return FAILURE;
 }
 
 int isCharacterTag(barcodeInput input){
-	if (input.line[0] == 0x04){
-		return SUCCESS;
-	}
-	return FAILURE;
+    if (input.line[0] == 0x04){
+	return SUCCESS;
+    }
+    return FAILURE;
 }
 
 int mapInputToCharacter(char* input, char* output, size_t size){
-	int found = FAILURE;
-	unsigned int iter = 0;
+    int found = FAILURE;
+    unsigned int iter = 0;
 
-	for (iter = 0 ; iter < sizeof(CharacterMap) / sizeof(barcodeMapping) && found == FAILURE; iter++){
-		if (size == CharacterMap[iter].size){
-			if (memcmp(CharacterMap[iter].pattern, input, size) == 0){
-				found = SUCCESS;
-				*output = CharacterMap[iter].character;
-			}
-		}
+    for (iter = 0 ; iter < sizeof(CharacterMap) / sizeof(barcodeMapping) && found == FAILURE; iter++){
+	if (size == CharacterMap[iter].size){
+	    if (memcmp(CharacterMap[iter].pattern, input, size) == 0){
+		found = SUCCESS;
+		*output = CharacterMap[iter].character;
+	    }
 	}
+    }
 	
-	if (found == SUCCESS){
-		return SUCCESS;
-	}
+    if (found == SUCCESS){
+	return SUCCESS;
+    }
 	
-	return FAILURE;
+    return FAILURE;
 }
 
 barcodeInput convertStringToLineInput(char* buffer, size_t size){
-	barcodeInput barcodeLine = {{0}};
+    barcodeInput barcodeLine = {{0}};
 	
-	if (buffer != NULL && size == INPUT_LINE_LENGTH){
-		memcpy((void *)&barcodeLine.line, (void *)buffer, INPUT_LINE_LENGTH);
-	}
+    if (buffer != NULL && size == INPUT_LINE_LENGTH){
+        memcpy((void *)&barcodeLine.line, (void *)buffer, INPUT_LINE_LENGTH);
+    }
 	
-	return barcodeLine;
+    return barcodeLine;
 }
 
 
